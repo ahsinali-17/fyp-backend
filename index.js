@@ -22,15 +22,11 @@ app.get('/', (req, res) => res.send('Backend is Live!'));
 
 app.post('/api/analyze', upload.single('file'), async (req, res) => {
     try {
-        console.log("1. Request Received"); // Debug Log
-
         if (!req.file) {
             console.log("Error: No file");
             return res.status(400).json({ error: 'No file uploaded' });
         }
         
-        // Check if user_id is actually arriving
-        console.log("2. User ID received:", req.body.user_id); 
         if (!req.body.user_id) {
              return res.status(400).json({ error: 'Missing user_id' });
         }
@@ -42,7 +38,7 @@ app.post('/api/analyze', upload.single('file'), async (req, res) => {
             .upload(fileName, req.file.buffer, { contentType: req.file.mimetype });
 
         if (uploadError) {
-            console.error("Storage Error:", uploadError); // See exact storage error
+            console.error("Storage Error:", uploadError);
             throw uploadError;
         }
 
@@ -58,16 +54,13 @@ app.post('/api/analyze', upload.single('file'), async (req, res) => {
             defect_type: isDefect ? "Screen Crack" : "None",
             device_name: "Vercel Backend Device",
         };
-
-        // 3. Save to Database
-        console.log("3. Attempting DB Insert...");
         
         const { error: dbError } = await supabase
             .from('inspections')
             .insert({
                 user_id: req.body.user_id,
                 image_url: publicUrl,
-                filename: fileName, // <--- ADDED THIS (Matches your DB column)
+                filename: fileName, 
                 prediction: mockResult.status,
                 defect_type: mockResult.defect_type,
                 confidence: mockResult.confidence,
@@ -75,11 +68,10 @@ app.post('/api/analyze', upload.single('file'), async (req, res) => {
             });
 
         if (dbError) {
-            console.error("DB Insert Error:", dbError); // <--- CRITICAL: This will show in Vercel logs
+            console.error("DB Insert Error:", dbError); 
             throw dbError;
         }
 
-        console.log("4. Success!");
         res.json({ ...mockResult, image_url: publicUrl });
 
     } catch (error) {
