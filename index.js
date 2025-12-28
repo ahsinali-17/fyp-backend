@@ -18,7 +18,7 @@ const upload = multer({ storage: storage });
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
-app.get('/', (req, res) => res.send('QA Backend is Live!'));
+app.get('/', (req, res) => res.send('Backend is Live!'));
 
 app.post('/api/analyze', upload.single('file'), async (req, res) => {
     try {
