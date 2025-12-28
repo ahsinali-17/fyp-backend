@@ -22,7 +22,18 @@ app.get('/', (req, res) => res.send('Backend is Live!'));
 
 app.post('/api/analyze', upload.single('file'), async (req, res) => {
     try {
-        if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+        console.log("1. Request Received"); // Debug Log
+
+        if (!req.file) {
+            console.log("Error: No file");
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+        
+        // Check if user_id is actually arriving
+        console.log("2. User ID received:", req.body.user_id); 
+        if (!req.body.user_id) {
+             return res.status(400).json({ error: 'Missing user_id' });
+        }
 
         // 1. Upload to Supabase
         const fileName = `${Date.now()}_${req.file.originalname}`;
@@ -30,7 +41,10 @@ app.post('/api/analyze', upload.single('file'), async (req, res) => {
             .from('scans')
             .upload(fileName, req.file.buffer, { contentType: req.file.mimetype });
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+            console.error("Storage Error:", uploadError); // See exact storage error
+            throw uploadError;
+        }
 
         const { data: { publicUrl } } = supabase.storage
             .from('scans')
@@ -39,26 +53,37 @@ app.post('/api/analyze', upload.single('file'), async (req, res) => {
         // 2. Mock AI Response
         const isDefect = Math.random() > 0.5;
         const mockResult = {
-            prediction: isDefect ? "Defect Detected" : "Clean",
+            status: isDefect ? "Defect Detected" : "Clean",
             confidence: 0.95,
             defect_type: isDefect ? "Screen Crack" : "None",
             device_name: "Vercel Backend Device",
-            image_url: publicUrl
         };
 
         // 3. Save to Database
+        console.log("3. Attempting DB Insert...");
+        
         const { error: dbError } = await supabase
             .from('inspections')
             .insert({
                 user_id: req.body.user_id,
-                ...mockResult,
+                image_url: publicUrl,
+                filename: fileName, // <--- ADDED THIS (Matches your DB column)
+                prediction: mockResult.status,
+                defect_type: mockResult.defect_type,
+                confidence: mockResult.confidence,
+                device_name: mockResult.device_name
             });
-            
-        if (dbError) throw dbError;
 
-        res.json(mockResult);
+        if (dbError) {
+            console.error("DB Insert Error:", dbError); // <--- CRITICAL: This will show in Vercel logs
+            throw dbError;
+        }
+
+        console.log("4. Success!");
+        res.json({ ...mockResult, image_url: publicUrl });
 
     } catch (error) {
+        console.error("CRASH:", error.message);
         res.status(500).json({ error: error.message });
     }
 });
