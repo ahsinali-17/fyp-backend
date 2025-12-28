@@ -27,13 +27,13 @@ app.post('/api/analyze', upload.single('file'), async (req, res) => {
         // 1. Upload to Supabase
         const fileName = `${Date.now()}_${req.file.originalname}`;
         const { error: uploadError } = await supabase.storage
-            .from('inspections')
+            .from('scans')
             .upload(fileName, req.file.buffer, { contentType: req.file.mimetype });
 
         if (uploadError) throw uploadError;
 
         const { data: { publicUrl } } = supabase.storage
-            .from('inspections')
+            .from('scans')
             .getPublicUrl(fileName);
 
         // 2. Mock AI Response
