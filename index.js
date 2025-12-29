@@ -52,7 +52,7 @@ app.post('/api/analyze', upload.single('file'), async (req, res) => {
             status: isDefect ? "Defect Detected" : "Clean",
             confidence: 0.95,
             defect_type: isDefect ? "Screen Crack" : "None",
-            device_name: "Vercel Backend Device",
+            device_name: req.body.device_name || "Unknown Device",
         };
         
         const { error: dbError } = await supabase

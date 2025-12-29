@@ -26,7 +26,7 @@ app.get('/api/health', (req, res) => {
 app.post('/api/analyze', upload.single('file'), async (req, res) => {
         if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
-        const { user_id } = req.body;
+        const { user_id, device_name } = req.body;
         const filePath = req.file.path;
         const fileExt = path.extname(req.file.originalname);
         const fileName = `${user_id}/${Date.now()}_${Math.round(Math.random() * 1000)}${fileExt}`;
@@ -77,6 +77,7 @@ app.post('/api/analyze', upload.single('file'), async (req, res) => {
                         defect_type: defect_type,
                         confidence: confidence,
                         user_id: user_id,
+                        device_name: device_name || "Unknown Device"
                     });
 
                 if (dbError) console.error("Database Error:", dbError.message);
