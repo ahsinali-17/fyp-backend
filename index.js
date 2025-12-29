@@ -49,22 +49,19 @@ app.post('/api/analyze', upload.single('file'), async (req, res) => {
         // 2. Mock AI Response
         const isDefect = Math.random() > 0.5;
         const mockResult = {
-            status: isDefect ? "Defect Detected" : "Clean",
+            prediction: isDefect ? "Defect Detected" : "Clean",
             confidence: 0.95,
             defect_type: isDefect ? "Screen Crack" : "None",
-            device_name: req.body.device_name || "Unknown Device",
         };
         
         const { error: dbError } = await supabase
             .from('inspections')
             .insert({
+                ...mockResult,
                 user_id: req.body.user_id,
                 image_url: publicUrl,
                 filename: fileName, 
-                prediction: mockResult.status,
-                defect_type: mockResult.defect_type,
-                confidence: mockResult.confidence,
-                device_name: mockResult.device_name
+                device_name: req.body.device_name || "Unknown Device",
             });
 
         if (dbError) {
@@ -72,7 +69,12 @@ app.post('/api/analyze', upload.single('file'), async (req, res) => {
             throw dbError;
         }
 
-        res.json({ ...mockResult, image_url: publicUrl });
+        res.json({  
+                status: mockResult.prediction,
+                type: mockResult.defect_type,
+                confidence: `${mockResult.confidence}%`,
+                image_url: publicUrl,
+                color: mockResult.prediction.includes("Defect") ? "red" : "green" });
 
     } catch (error) {
         console.error("CRASH:", error.message);
